@@ -89,5 +89,25 @@ a second run reported full per-chat message counts (e.g. `Succeeded handling
 
 ---
 
+## 4. GUI app (x86_64) crashes on current macOS under Rosetta
+
+**Symptom.** `WechatExporter.app` (x86_64) crashes shortly after selecting a
+backup, while the window redraws — even after ad-hoc signing + de-quarantine.
+
+**Crash.** `EXC_BAD_INSTRUCTION` (SIGILL) on the main thread, inside
+`AppKit … +[CATransaction(NSCATransaction) NS_setFlushesWithDisplayLink]_block_invoke`
+(called from the CFRunLoop observer). No application frames on the crashed
+thread — it faults in the Core Animation display-link path during a normal
+redraw. Reproducible across runs.
+
+**Cause.** The 3-year-old Intel build running under Rosetta on modern macOS hits
+a Core Animation / display-link incompatibility. Not data-related.
+
+**Suggested fix.** Ship a **native arm64 (or universal)** GUI build. Until then,
+the CLI is the only viable path on Apple Silicon — which makes issue #3
+(CLI incremental) the practical blocker for fast re-exports.
+
+---
+
 *Reported from a real end-to-end run on macOS + Apple Silicon, iOS backup made
 with iMazing, WeChat iOS 8.0.75.*
