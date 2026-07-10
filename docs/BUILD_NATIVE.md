@@ -29,6 +29,13 @@ System libs (sqlite3, libxml2, curl, z, iconv) are used to avoid @rpath issues.
 6. **Exclude `IDeviceBackup.cpp`** (live-device only; needs libimobiledevice —
    the CLI reads local backups via `ITunesDb`).
 
+
+7. **Don't inherit saved options on incremental load** (`Exporter.cpp`, ~line 339):
+   comment out `m_options = m_exportContext->getOptions();`. Inheriting the
+   previous run's serialized options can drop the name-filter (especially across
+   different builds), causing the account to be skipped so *nothing* is exported.
+   Keep the current run's options instead.
+
 ## Build
 See `scripts/build-native-arm64.sh`. Runtime needs Homebrew + the formulae above
 installed (the binary links their dylibs by absolute path).
