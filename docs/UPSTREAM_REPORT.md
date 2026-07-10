@@ -107,6 +107,31 @@ a Core Animation / display-link incompatibility. Not data-related.
 the CLI is the only viable path on Apple Silicon — which makes issue #3
 (CLI incremental) the practical blocker for fast re-exports.
 
+
+## 5. Newer WeChat zstd-compresses app-message content — exporter can't decode it (major)
+
+**Symptom.** `msgtype=49` messages — **quote-replies, link cards, text-with-links,
+forwards** — render as `[Link]` with an *empty sender* (`wxId=""`), or are dropped
+entirely (URLs and all). Source of the massive `parser error: Start tag expected,
+'<' not found` spam during export.
+
+**Root cause.** In WeChat versions after 8.0.9 (observed on **8.0.75**), the
+`appmsg` content stored in the message DB is **Zstandard-compressed** — frame magic
+`28 B5 2F FD`, using a **custom dictionary (`Dictionary_ID = 5`)**.
+`MessageParser::parseAppMsg` feeds this compressed blob straight to the XML parser
+(`XmlParser xmlParser(msg.content, true)` → `parseNodeValue("/msg/appmsg/type")`),
+which fails, so it falls back to `[Link]` (or drops the message). The dictionary is
+a **raw, header-less** zstd dictionary embedded in the WeChat client (not a standard
+`37 A4 30 EC` dict, and not present in the iOS backup).
+
+**Impact.** All quote-replies / link-cards / text-with-links lose content **and**
+sender across every chat — a large fraction of substance in discussion chats.
+
+**Fix.** Before XML-parsing appmsg content, detect the zstd magic and
+`ZSTD_decompress_usingDict()` with WeChat's message dictionary (ID 5), which must be
+bundled/extracted. This is the blocker: the dictionary must be obtained from the
+WeChat client (reverse-engineering) or a community source.
+
 ---
 
 *Reported from a real end-to-end run on macOS + Apple Silicon, iOS backup made
