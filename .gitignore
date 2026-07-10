@@ -1,0 +1,11 @@
+# Never commit the upstream binary (GPL, download separately) or any private data
+WechatExporterCmd
+WechatExporterCmd.zip
+*.icns
+last-run-errors.log
+# exports / backups / transcripts = your private chat data
+wechat_export/
+wechat_selected/
+wechat_txt/
+*.txt
+!scripts/**
